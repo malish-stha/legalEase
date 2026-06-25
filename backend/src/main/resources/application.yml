@@ -1,0 +1,47 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: legalease-backend
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${CLERK_JWKS_URI}
+
+# App Configurations
+app:
+  supabase:
+    url: ${SUPABASE_URL}
+    key: ${SUPABASE_KEY}
+    bucket-name: legal-documents
+    # For S3-compatible storage API in Supabase
+    s3-endpoint: ${SUPABASE_S3_ENDPOINT}
+    s3-region: "ap-southeast-1" # Or your Supabase region
+    access-key: ${SUPABASE_ACCESS_KEY}
+    secret-key: ${SUPABASE_SECRET_KEY}
+
+  gemini:
+    api-key: ${GEMINI_API_KEY}
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    com.legalease: DEBUG
