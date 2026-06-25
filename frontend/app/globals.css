@@ -1,0 +1,97 @@
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@clerk/ui/themes/shadcn.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  .theme {
+    --font-heading: var(--font-serif);
+    --font-serif: var(--font-serif)}
+  :root {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.153 0.006 107.1);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.153 0.006 107.1);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.153 0.006 107.1);
+    --primary: oklch(0.555 0.163 48.998);
+    --primary-foreground: oklch(0.987 0.022 95.277);
+    --secondary: oklch(0.967 0.001 286.375);
+    --secondary-foreground: oklch(0.21 0.006 285.885);
+    --muted: oklch(0.966 0.005 106.5);
+    --muted-foreground: oklch(0.58 0.031 107.3);
+    --accent: oklch(0.966 0.005 106.5);
+    --accent-foreground: oklch(0.228 0.013 107.4);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.93 0.007 106.5);
+    --input: oklch(0.93 0.007 106.5);
+    --ring: oklch(0.737 0.021 106.9);
+    --chart-1: oklch(0.88 0.011 106.6);
+    --chart-2: oklch(0.58 0.031 107.3);
+    --chart-3: oklch(0.466 0.025 107.3);
+    --chart-4: oklch(0.394 0.023 107.4);
+    --chart-5: oklch(0.286 0.016 107.4);
+    --radius: 0;
+    --sidebar: oklch(0.988 0.003 106.5);
+    --sidebar-foreground: oklch(0.153 0.006 107.1);
+    --sidebar-primary: oklch(0.666 0.179 58.318);
+    --sidebar-primary-foreground: oklch(0.987 0.022 95.277);
+    --sidebar-accent: oklch(0.966 0.005 106.5);
+    --sidebar-accent-foreground: oklch(0.228 0.013 107.4);
+    --sidebar-border: oklch(0.93 0.007 106.5);
+    --sidebar-ring: oklch(0.737 0.021 106.9)}
+  .dark {
+    --background: oklch(0.14 0.008 105.0);
+    --foreground: oklch(0.92 0.008 105.0);
+    --card: oklch(0.12 0.005 105.0);
+    --card-foreground: oklch(0.92 0.008 105.0);
+    --popover: oklch(0.12 0.005 105.0);
+    --popover-foreground: oklch(0.92 0.008 105.0);
+    --primary: oklch(0.55 0.16 45.0);
+    --primary-foreground: oklch(0.98 0.01 45.0);
+    --secondary: oklch(0.17 0.01 105.0);
+    --secondary-foreground: oklch(0.98 0.01 105.0);
+    --muted: oklch(0.16 0.009 105.0);
+    --muted-foreground: oklch(0.72 0.01 105.0);
+    --accent: oklch(0.16 0.009 105.0);
+    --accent-foreground: oklch(0.92 0.008 105.0);
+    --destructive: oklch(0.55 0.18 28.0);
+    --border: oklch(0.22 0.015 105.0);
+    --input: oklch(0.22 0.015 105.0);
+    --ring: oklch(0.55 0.16 45.0);
+    --chart-1: oklch(0.55 0.16 45.0);
+    --chart-2: oklch(0.12 0.005 105.0);
+    --chart-3: oklch(0.17 0.01 105.0);
+    --chart-4: oklch(0.16 0.009 105.0);
+    --chart-5: oklch(0.22 0.015 105.0);
+    --sidebar: oklch(0.12 0.005 105.0);
+    --sidebar-foreground: oklch(0.92 0.008 105.0);
+    --sidebar-primary: oklch(0.55 0.16 45.0);
+    --sidebar-primary-foreground: oklch(0.98 0.01 45.0);
+    --sidebar-accent: oklch(0.16 0.009 105.0);
+    --sidebar-accent-foreground: oklch(0.92 0.008 105.0);
+    --sidebar-border: oklch(0.22 0.015 105.0);
+    --sidebar-ring: oklch(0.55 0.16 45.0)}
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  html {
+    @apply font-serif;
+  }
+  
+  /* Enforce Left-to-Right layout on all Clerk widgets to prevent layout distortion under RTL mode */
+  .cl-rootBox,
+  .cl-userButtonPopoverCard,
+  [class^="cl-"] {
+    direction: ltr !important;
+    text-align: left;
+  }
+}

@@ -40,3 +40,8 @@ yarn-error.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Antigravity agent & skills ignores
+.agents/
+*skills-lock.json
+
