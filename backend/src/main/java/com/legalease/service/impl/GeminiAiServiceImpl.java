@@ -1,13 +1,29 @@
 package com.legalease.service.impl;
 
 import com.legalease.service.AiService;
+import dev.langchain4j.data.image.Image;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ImageContent;
+import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.TextContent;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.StreamingResponseHandler;
 import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.StreamingChatLanguageModel;
+import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
+import dev.langchain4j.model.googleai.GoogleAiEmbeddingModel;
+import dev.langchain4j.model.googleai.GoogleAiGeminiStreamingChatModel;
+import dev.langchain4j.model.output.Response;
+import dev.langchain4j.data.embedding.Embedding;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.Base64;
+import java.util.List;
 
 @Service
 public class GeminiAiServiceImpl implements AiService {
@@ -18,11 +34,24 @@ public class GeminiAiServiceImpl implements AiService {
     private String apiKey;
 
     private ChatLanguageModel model;
+    private EmbeddingModel embeddingModel;
+    private StreamingChatLanguageModel streamingModel;
 
     @PostConstruct
     public void init() {
-        log.info("Initializing Gemini Chat Model...");
+        log.info("Initializing Gemini Models...");
+        
         this.model = GoogleAiGeminiChatModel.builder()
+                .apiKey(apiKey)
+                .modelName("gemini-2.0-flash")
+                .build();
+
+        this.embeddingModel = GoogleAiEmbeddingModel.builder()
+                .apiKey(apiKey)
+                .modelName("text-embedding-004")
+                .build();
+
+        this.streamingModel = GoogleAiGeminiStreamingChatModel.builder()
                 .apiKey(apiKey)
                 .modelName("gemini-2.0-flash")
                 .build();
@@ -51,7 +80,7 @@ public class GeminiAiServiceImpl implements AiService {
                 }
                 
                 Guidelines:
-                1. If a clause is highly unfair or potentially illegal in Nepal (e.g. eviction with 3 days notice), flag it as DANGER and explain why under Nepal law context.
+                1. If a clause is unfair or illegal in Nepal (e.g. eviction with 3 days notice), flag it as DANGER and explain why under Nepal law context.
                 2. Respond with ONLY the raw JSON output. Do not wrap it in markdown code blocks like ```json ... ```. Just return the JSON object directly.
                 """;
 
@@ -74,6 +103,51 @@ public class GeminiAiServiceImpl implements AiService {
         } catch (Exception e) {
             log.error("Failed to generate summary with Gemini model", e);
             throw new RuntimeException("Gemini generation failed", e);
+        }
+    }
+
+    @Override
+    public float[] embedText(String text) {
+        log.info("Calculating vector embedding for text length: {}", text.length());
+        try {
+            Response<Embedding> response = embeddingModel.embed(text);
+            return response.content().vector();
+        } catch (Exception e) {
+            log.error("Failed to calculate embedding", e);
+            throw new RuntimeException("Gemini embedding calculation failed", e);
+        }
+    }
+
+    @Override
+    public String performOcr(byte[] imageBytes, String mimeType) {
+        log.info("Performing OCR text extraction via Gemini Vision for image size: {} bytes", imageBytes.length);
+        try {
+            String base64Image = Base64.getEncoder().encodeToString(imageBytes);
+            ImageContent imageContent = ImageContent.from(base64Image, mimeType);
+            TextContent textContent = TextContent.from("""
+                Perform OCR on this image. Extract all text content verbatim, maintaining format where possible. 
+                Do not include warnings, explanations, or chats. Output the extracted document text only.
+                """);
+
+            UserMessage userMessage = UserMessage.from(textContent, imageContent);
+            Response<AiMessage> response = model.generate(userMessage);
+            return response.content().text();
+        } catch (Exception e) {
+            log.error("Failed to perform OCR with Gemini model", e);
+            throw new RuntimeException("Gemini Vision OCR extraction failed", e);
+        }
+    }
+
+    @Override
+    public void streamChatResponse(String systemPrompt, String userPrompt, StreamingResponseHandler<AiMessage> handler) {
+        log.info("Invoking streaming Gemini response for user query");
+        try {
+            SystemMessage sysMsg = SystemMessage.from(systemPrompt);
+            UserMessage userMsg = UserMessage.from(userPrompt);
+            streamingModel.generate(List.of(sysMsg, userMsg), handler);
+        } catch (Exception e) {
+            log.error("Failed to start Gemini chat stream", e);
+            throw new RuntimeException("Streaming setup failed", e);
         }
     }
 }

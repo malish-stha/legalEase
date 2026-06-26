@@ -6,6 +6,7 @@ import com.legalease.entity.DocAnalysis;
 import com.legalease.entity.Document;
 import com.legalease.entity.User;
 import com.legalease.repository.DocAnalysisRepository;
+import com.legalease.repository.DocEmbeddingRepository;
 import com.legalease.repository.DocumentRepository;
 import com.legalease.repository.UserRepository;
 import com.legalease.service.*;
@@ -18,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -30,6 +32,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final UserRepository userRepository;
     private final DocumentRepository documentRepository;
     private final DocAnalysisRepository docAnalysisRepository;
+    private final DocEmbeddingRepository docEmbeddingRepository;
     
     private final StorageService storageService;
     private final DocumentParserService documentParserService;
@@ -42,6 +45,7 @@ public class DocumentServiceImpl implements DocumentService {
             UserRepository userRepository,
             DocumentRepository documentRepository,
             DocAnalysisRepository docAnalysisRepository,
+            DocEmbeddingRepository docEmbeddingRepository,
             StorageService storageService,
             DocumentParserService documentParserService,
             RedactionService redactionService,
@@ -49,6 +53,7 @@ public class DocumentServiceImpl implements DocumentService {
         this.userRepository = userRepository;
         this.documentRepository = documentRepository;
         this.docAnalysisRepository = docAnalysisRepository;
+        this.docEmbeddingRepository = docEmbeddingRepository;
         this.storageService = storageService;
         this.documentParserService = documentParserService;
         this.redactionService = redactionService;
@@ -58,7 +63,8 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     @Transactional
     public DocumentResponse uploadAndAnalyze(MultipartFile file, String clerkUserId, String userEmail, String userName) throws IOException {
-        log.info("Processing document upload request. User: {}, File: {}", clerkUserId, file.getOriginalFilename());
+        log.info("Processing document upload request. User: {}, File: {}, Content-Type: {}", 
+                clerkUserId, file.getOriginalFilename(), file.getContentType());
 
         // 1. Sync User if not already present in db
         User user = userRepository.findById(clerkUserId)
@@ -73,8 +79,15 @@ public class DocumentServiceImpl implements DocumentService {
                     return userRepository.save(newUser);
                 });
 
-        // 2. Parse text from document using Tika
-        String rawText = documentParserService.parseDocument(file);
+        // 2. Parse text from file. Support image OCR using Gemini Vision, or PDF/DOCX using Tika
+        String rawText;
+        String contentType = file.getContentType();
+        if (contentType != null && contentType.startsWith("image/")) {
+            log.info("Image upload detected. Triggering Gemini Vision OCR...");
+            rawText = aiService.performOcr(file.getBytes(), contentType);
+        } else {
+            rawText = documentParserService.parseDocument(file);
+        }
 
         // 3. Redact PII (Anonymization)
         String redactedText = redactionService.redactPii(rawText);
@@ -94,7 +107,7 @@ public class DocumentServiceImpl implements DocumentService {
                 .build();
         document = documentRepository.save(document);
 
-        // 6. Generate legal summary with Gemini 2.0 Flash
+        // 6. Generate legal summary and chunk/embed document text
         try {
             String summaryJson = aiService.generateSummary(redactedText);
             
@@ -133,6 +146,10 @@ public class DocumentServiceImpl implements DocumentService {
                     .build();
             docAnalysisRepository.save(docAnalysis);
 
+            // Calculate chunk embeddings and save to vector store
+            log.info("Triggering text chunking and vector embeddings generation for document ID: {}", document.getId());
+            chunkAndEmbed(document, redactedText);
+
             // Update document title if extracted from AI analysis
             if (!title.isEmpty()) {
                 document.setFileName(title);
@@ -143,11 +160,45 @@ public class DocumentServiceImpl implements DocumentService {
             return mapToResponse(document, docAnalysis);
 
         } catch (Exception e) {
-            log.error("AI Analysis failed for document: {}", document.getId(), e);
+            log.error("AI Analysis/Embedding failed for document: {}", document.getId(), e);
             document.setStatus("FAILED");
             documentRepository.save(document);
-            throw new IOException("Failed to analyze document with AI", e);
+            throw new IOException("Failed to analyze and embed document with AI", e);
         }
+    }
+
+    private void chunkAndEmbed(Document doc, String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return;
+        }
+
+        // Clean existing embeddings just in case of reprocessing
+        docEmbeddingRepository.deleteByDocumentId(doc.getId());
+
+        int chunkSize = 1000;
+        int overlap = 200;
+        int start = 0;
+        int chunkIndex = 0;
+
+        while (start < text.length()) {
+            int end = Math.min(start + chunkSize, text.length());
+            String chunkText = text.substring(start, end);
+
+            try {
+                float[] vector = aiService.embedText(chunkText);
+                String vectorStr = Arrays.toString(vector);
+                docEmbeddingRepository.insertEmbedding(doc.getId(), chunkText, chunkIndex, vectorStr);
+            } catch (Exception embeddingEx) {
+                log.error("Failed to generate/save embedding for chunk {} of document {}", chunkIndex, doc.getId(), embeddingEx);
+            }
+
+            if (end == text.length()) {
+                break;
+            }
+            start += (chunkSize - overlap);
+            chunkIndex++;
+        }
+        log.info("Successfully completed chunking and embedding. Saved {} chunks.", chunkIndex);
     }
 
     @Override

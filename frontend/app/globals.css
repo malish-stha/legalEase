@@ -94,4 +94,145 @@
     direction: ltr !important;
     text-align: left;
   }
+
+  /* Invert black social icons (Apple & GitHub) in dark mode to make them white and visible */
+  .dark .cl-socialButtonsIconButton__apple img,
+  .dark .cl-socialButtonsIconButton__github img,
+  .dark .cl-socialButtonsIconButton__microsoft img,
+  .dark .cl-socialButtonsIconButton__twitter img,
+  .dark .cl-socialButtonsIconButton__x img {
+    filter: invert(1) brightness(1.5);
+  }
+}
+
+/* ========================
+   PREMIUM ANIMATIONS
+   ======================== */
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-18px) rotate(1.5deg); }
+  66% { transform: translateY(-8px) rotate(-1deg); }
+}
+
+@keyframes float-reverse {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(14px) rotate(-1.5deg); }
+  66% { transform: translateY(6px) rotate(1deg); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes slide-up-fade {
+  from { opacity: 0; transform: translateY(32px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes orb-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.15); opacity: 0.6; }
+}
+
+@keyframes badge-pop {
+  0% { opacity: 0; transform: scale(0.7) translateY(8px); }
+  70% { transform: scale(1.05) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes typing-dot {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* ========================
+   UTILITY CLASSES
+   ======================== */
+
+.animate-gradient {
+  background-size: 300% 300%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+.animate-float {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: float-reverse 7s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background-size: 200% auto;
+  animation: shimmer 2.5s linear infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up-fade 0.6s ease forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.5s ease forwards;
+}
+
+.animate-orb-pulse {
+  animation: orb-pulse 4s ease-in-out infinite;
+}
+
+.animate-badge-pop {
+  animation: badge-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Stagger delays */
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+.delay-700 { animation-delay: 0.7s; }
+.delay-900 { animation-delay: 0.9s; }
+
+/* Typing dots */
+.typing-dot:nth-child(1) { animation: typing-dot 1.2s ease-in-out 0s infinite; }
+.typing-dot:nth-child(2) { animation: typing-dot 1.2s ease-in-out 0.2s infinite; }
+.typing-dot:nth-child(3) { animation: typing-dot 1.2s ease-in-out 0.4s infinite; }
+
+/* Glass card */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark .glass {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: oklch(0.7 0.01 105);
+  border-radius: 99px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: oklch(0.3 0.01 105);
 }

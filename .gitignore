@@ -45,3 +45,8 @@ yarn-error.log*
 .agents/
 *skills-lock.json
 
+# Local Spring Boot configuration profiles
+*local.yml
+*local.properties
+
+
