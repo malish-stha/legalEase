@@ -240,6 +240,7 @@ public class DocumentServiceImpl implements DocumentService {
                     .summary(analysis.getSummary())
                     .riskLevel(analysis.getRiskLevel())
                     .keyClauses(analysis.getKeyClauses())
+                    .complianceReport(analysis.getComplianceReport())
                     .build();
         }
 

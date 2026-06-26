@@ -38,4 +38,6 @@ public interface DocEmbeddingRepository extends JpaRepository<DocEmbedding, UUID
     );
 
     void deleteByDocumentId(UUID docId);
+
+    List<DocEmbedding> findByDocumentIdOrderByChunkIndexAsc(UUID documentId);
 }

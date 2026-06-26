@@ -165,7 +165,7 @@ export default function Dashboard() {
                   }`}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
-                  <span>{(t as any)[labelKey]?.replace(/^📋\s*|^👨‍⚖️\s*/u, "")}</span>
+                  <span>{(t as any)[labelKey]?.replace(/^📋\s*|^👨‍⚖️\s*/, "")}</span>
                   {isActive && <ChevronRight className="w-3.5 h-3.5 ml-auto" />}
                 </Link>
               );

@@ -150,4 +150,105 @@ public class GeminiAiServiceImpl implements AiService {
             throw new RuntimeException("Streaming setup failed", e);
         }
     }
+
+    @Override
+    public String checkLaborCompliance(String documentText) {
+        log.info("Running Nepal Labor Act compliance checks for text length: {}", documentText.length());
+
+        String systemPrompt = """
+                You are an expert legal AI compliance officer specializing in Nepal Labor Law (Labor Act, 2074 / श्रम ऐन, २०७४).
+                Analyze the provided employment contract text and check it clause-by-clause against the following key provisions of the Nepal Labor Act 2074:
+                1. Probation Period (Section 13): Maximum of 6 months. Any longer period is non-compliant.
+                2. Working Hours (Section 28): Standard working hours are maximum 8 hours per day and 48 hours per week.
+                3. Overtime Rate (Section 30): Overtime pay must be at least 1.5 times the regular remuneration. Maximum overtime allowed is 24 hours per week.
+                4. Weekly Holiday (Section 40): At least 1 day paid weekly holiday is mandatory.
+                5. Public Holidays (Section 41): Employees are entitled to at least 13 days of paid public holidays annually (14 days for females).
+                6. Annual (Home) Leave (Section 42): 1 day for every 20 days worked.
+                7. Sick Leave (Section 43): At least 12 days fully paid sick leave annually.
+                8. Mourning Leave (Section 44): 13 days of paid mourning leave in the event of the death of a close family member.
+                9. Maternity/Paternity Leave (Section 45): Maternity leave must be at least 98 days total (60 days fully paid). Paternity leave must be at least 15 days fully paid.
+                10. Termination Notice (Section 144): At least 1 day notice for tenure up to 4 weeks; at least 7 days for more than 4 weeks to 1 year; at least 30 days for tenure exceeding 1 year.
+                
+                For each provision, determine if the contract is COMPLIANT, NON_COMPLIANT, or NOT_SPECIFIED in the contract text.
+                Return your analysis in JSON format matching this EXACT schema:
+                [
+                  {
+                    "provision": "Name of the provision (e.g. Probation Period)",
+                    "status": "COMPLIANT | NON_COMPLIANT | NOT_SPECIFIED",
+                    "clauseText": "Quote the exact wording of the clause in the contract addressing this, or write 'Not found' if not specified.",
+                    "lawReference": "Cite the relevant section of the Nepal Labor Act 2074 (e.g. Section 13)",
+                    "explanation": "Brief explanation of why it is compliant or non-compliant, explaining it simply in both English and Nepali. State the minimum requirements if non-compliant."
+                  }
+                ]
+                
+                Respond with ONLY the raw JSON output. Do not wrap it in markdown code blocks like ```json ... ```. Just return the JSON array directly.
+                """;
+
+        String userMessage = "Here is the contract text to evaluate:\n\n" + documentText;
+
+        try {
+            String response = model.generate(userMessage + "\n\nInstructions:\n" + systemPrompt);
+            String cleanedResponse = response.trim();
+            if (cleanedResponse.startsWith("```json")) {
+                cleanedResponse = cleanedResponse.substring(7);
+            }
+            if (cleanedResponse.endsWith("```")) {
+                cleanedResponse = cleanedResponse.substring(0, cleanedResponse.length() - 3);
+            }
+            return cleanedResponse.trim();
+        } catch (Exception e) {
+            log.error("Failed to run Labor Law compliance check via Gemini model", e);
+            throw new RuntimeException("Gemini compliance check failed", e);
+        }
+    }
+
+    @Override
+    public String compareDocuments(String baseText, String compareText) {
+        log.info("Comparing two documents. Base text size: {}, Compare text size: {}", baseText.length(), compareText.length());
+
+        String systemPrompt = """
+                You are an expert legal AI advisor specializing in document comparison.
+                Compare the original (base) contract text with the modified (comparison) contract text.
+                Identify all differences, classifying each change as:
+                - ADDED: A new clause or sentence was added.
+                - DELETED: A clause or sentence was deleted.
+                - MODIFIED: A clause was edited (e.g. rent changed from 15k to 20k).
+                - SUSPICIOUS: A potentially dangerous change (e.g. hiding an eviction term, removing liability clauses, changing jurisdiction secretly).
+                
+                Evaluate the modifications carefully and explain what they mean for both parties.
+                
+                Return the comparison result in JSON format matching this EXACT schema:
+                {
+                  "overallSummary": "A concise summary of what has changed between the two versions and the overall impact.",
+                  "changes": [
+                    {
+                      "type": "ADDED | DELETED | MODIFIED | SUSPICIOUS",
+                      "clauseTitle": "Title or reference for this clause (e.g., Rent, Clause 7, Notice Period)",
+                      "originalText": "The text in the base document, or 'Not present' if newly added.",
+                      "modifiedText": "The text in the comparison document, or 'Removed' if deleted.",
+                      "explanation": "Explain what this change means in simple language in both English and Nepali. Highlight any risk if suspicious."
+                    }
+                  ]
+                }
+                
+                Respond with ONLY the raw JSON output. Do not wrap it in markdown code blocks like ```json ... ```. Just return the JSON object directly.
+                """;
+
+        String userMessage = "Original (Base) Document:\n" + baseText + "\n\n====================\n\nModified (Comparison) Document:\n" + compareText;
+
+        try {
+            String response = model.generate(userMessage + "\n\nInstructions:\n" + systemPrompt);
+            String cleanedResponse = response.trim();
+            if (cleanedResponse.startsWith("```json")) {
+                cleanedResponse = cleanedResponse.substring(7);
+            }
+            if (cleanedResponse.endsWith("```")) {
+                cleanedResponse = cleanedResponse.substring(0, cleanedResponse.length() - 3);
+            }
+            return cleanedResponse.trim();
+        } catch (Exception e) {
+            log.error("Failed to compare documents via Gemini model", e);
+            throw new RuntimeException("Gemini document comparison failed", e);
+        }
+    }
 }

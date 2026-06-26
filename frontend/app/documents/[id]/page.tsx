@@ -65,12 +65,44 @@ export default function DocumentDetails() {
   const [doc, setDoc] = useState<Document | null>(null);
   const [docLoading, setDocLoading] = useState(true);
   const [docError, setDocError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"summary" | "clauses">("summary");
+  const [activeTab, setActiveTab] = useState<"summary" | "clauses" | "compliance">("summary");
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [chatInput, setChatInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+
+  // Compliance checker states
+  const [complianceReport, setComplianceReport] = useState<any[]>([]);
+  const [complianceLoading, setComplianceLoading] = useState(false);
+  const [complianceError, setComplianceError] = useState<string | null>(null);
+
+  const fetchComplianceReport = async () => {
+    if (complianceReport.length > 0 || complianceLoading) return;
+    setComplianceLoading(true);
+    setComplianceError(null);
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/documents/${id}/compliance`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const parsed = JSON.parse(response.data.complianceReport);
+      setComplianceReport(parsed);
+    } catch (err: any) {
+      console.error("Failed to load compliance report", err);
+      setComplianceError(language === "ne" ? "अनुपालन विश्लेषण लोड गर्न सकिएन।" : "Failed to load compliance report.");
+    } finally {
+      setComplianceLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "compliance") {
+      fetchComplianceReport();
+    }
+  }, [activeTab]);
   const [streamedResponse, setStreamedResponse] = useState("");
 
   const chatEndRef = useRef<HTMLDivElement | null>(null);
@@ -301,10 +333,11 @@ export default function DocumentDetails() {
             {[
               { key: "summary", label: `📄 ${t.docSummary}` },
               { key: "clauses", label: `⚖️ ${t.keyClauses} (${clauses.length})` },
+              { key: "compliance", label: `🛡️ ${t.complianceTab}` },
             ].map(({ key, label }) => (
               <button
                 key={key}
-                onClick={() => setActiveTab(key as "summary" | "clauses")}
+                onClick={() => setActiveTab(key as "summary" | "clauses" | "compliance")}
                 className={`flex-1 py-3.5 text-sm font-semibold border-b-2 transition-all ${
                   activeTab === key
                     ? "border-primary text-primary bg-primary/3"
@@ -366,7 +399,7 @@ export default function DocumentDetails() {
                   )}
                 </div>
               </>
-            ) : (
+            ) : activeTab === "clauses" ? (
               <div className="space-y-4">
                 {clauses.length === 0 ? (
                   <div className="text-center py-16 rounded-xl border border-dashed border-border text-muted-foreground">
@@ -404,6 +437,67 @@ export default function DocumentDetails() {
                           <p className="text-sm text-foreground/75 leading-relaxed font-light">
                             {clause.explanation}
                           </p>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4 animate-fade-in">
+                <div className="bg-card border border-border rounded-xl p-5 space-y-2">
+                  <h3 className="font-serif font-bold text-sm text-foreground">{t.complianceTitle}</h3>
+                  <p className="text-xs text-muted-foreground font-light leading-relaxed">
+                    {language === "ne"
+                      ? "यो रिपोर्टले नेपाल श्रम ऐन २०७४ का प्रमुख प्रावधानहरूसँग यस सम्झौताका बुँदाहरूको तुलना गर्दछ।"
+                      : "This report evaluates agreement clauses against key statutory minimums of the Nepal Labor Act 2074."}
+                  </p>
+                </div>
+                {complianceLoading ? (
+                  <div className="py-12 flex flex-col items-center justify-center gap-3">
+                    <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                    <span className="text-xs text-muted-foreground">{t.loadingCompliance}</span>
+                  </div>
+                ) : complianceError ? (
+                  <div className="py-8 text-center bg-red-500/10 border border-red-500/20 text-destructive rounded-xl text-xs font-semibold px-4">
+                    {complianceError}
+                  </div>
+                ) : (
+                  complianceReport.map((item, index) => {
+                    const statusText = {
+                      COMPLIANT: t.compliant,
+                      NON_COMPLIANT: t.nonCompliant,
+                      NOT_SPECIFIED: t.notSpecified,
+                    }[item.status as "COMPLIANT" | "NON_COMPLIANT" | "NOT_SPECIFIED"] || item.status;
+
+                    const cardColors = {
+                      COMPLIANT: "border-green-500/20 hover:border-green-500/40 bg-green-500/1 hover:shadow-green-500/2",
+                      NON_COMPLIANT: "border-red-500/20 hover:border-red-500/40 bg-red-500/1 hover:shadow-red-500/2",
+                      NOT_SPECIFIED: "border-yellow-500/20 hover:border-yellow-500/40 bg-yellow-500/1 hover:shadow-yellow-500/2",
+                    }[item.status as "COMPLIANT" | "NON_COMPLIANT" | "NOT_SPECIFIED"] || "border-border";
+
+                    return (
+                      <div
+                        key={index}
+                        className={`bg-card border rounded-xl p-5 space-y-3 transition-all ${cardColors}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-serif font-bold text-sm text-foreground">{item.provision}</h4>
+                          <span className="text-xs font-semibold">{statusText}</span>
+                        </div>
+
+                        {item.status !== "NOT_SPECIFIED" && (
+                          <blockquote className="pl-3 border-l-2 border-primary/50 text-xs italic text-foreground/80 leading-relaxed">
+                            "{item.clauseText}"
+                          </blockquote>
+                        )}
+
+                        <div className="text-xs text-foreground/75 leading-relaxed font-light font-sans bg-muted/20 p-3 rounded-lg border border-border/40">
+                          <span className="font-semibold block mb-1">{t.explanation}:</span>
+                          {item.explanation}
+                          <span className="block mt-2 font-mono text-[10px] text-muted-foreground">
+                            {t.lawReference}: {item.lawReference}
+                          </span>
                         </div>
                       </div>
                     );

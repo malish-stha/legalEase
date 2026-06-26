@@ -27,4 +27,19 @@ public interface AiService {
      * Streams responses for RAG chat.
      */
     void streamChatResponse(String systemPrompt, String userPrompt, dev.langchain4j.model.StreamingResponseHandler<dev.langchain4j.data.message.AiMessage> handler);
+
+    /**
+     * Runs Nepal Labor Law compliance check on document text.
+     * @param documentText Full text content of the contract.
+     * @return JSON string of compliance checks.
+     */
+    String checkLaborCompliance(String documentText);
+
+    /**
+     * Semantically compares two legal documents.
+     * @param baseText Full text of the base document.
+     * @param compareText Full text of the modified document.
+     * @return JSON analysis of the changes and comparison details.
+     */
+    String compareDocuments(String baseText, String compareText);
 }

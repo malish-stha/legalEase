@@ -28,18 +28,22 @@ public class DocAnalysis {
     @Column(name = "raw_ai_response", columnDefinition = "TEXT")
     private String rawAiResponse; // Direct dump from LLM
 
+    @Column(name = "compliance_report", columnDefinition = "TEXT")
+    private String complianceReport; // JSON string of compliance checks array
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     public DocAnalysis() {}
 
-    public DocAnalysis(UUID id, Document document, String summary, String riskLevel, String keyClauses, String rawAiResponse, LocalDateTime createdAt) {
+    public DocAnalysis(UUID id, Document document, String summary, String riskLevel, String keyClauses, String rawAiResponse, String complianceReport, LocalDateTime createdAt) {
         this.id = id;
         this.document = document;
         this.summary = summary;
         this.riskLevel = riskLevel;
         this.keyClauses = keyClauses;
         this.rawAiResponse = rawAiResponse;
+        this.complianceReport = complianceReport;
         this.createdAt = createdAt;
     }
 
@@ -66,6 +70,9 @@ public class DocAnalysis {
     public String getRawAiResponse() { return rawAiResponse; }
     public void setRawAiResponse(String rawAiResponse) { this.rawAiResponse = rawAiResponse; }
 
+    public String getComplianceReport() { return complianceReport; }
+    public void setComplianceReport(String complianceReport) { this.complianceReport = complianceReport; }
+
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
@@ -80,6 +87,7 @@ public class DocAnalysis {
         private String riskLevel;
         private String keyClauses;
         private String rawAiResponse;
+        private String complianceReport;
         private LocalDateTime createdAt;
 
         public Builder id(UUID id) { this.id = id; return this; }
@@ -88,10 +96,11 @@ public class DocAnalysis {
         public Builder riskLevel(String riskLevel) { this.riskLevel = riskLevel; return this; }
         public Builder keyClauses(String keyClauses) { this.keyClauses = keyClauses; return this; }
         public Builder rawAiResponse(String rawAiResponse) { this.rawAiResponse = rawAiResponse; return this; }
+        public Builder complianceReport(String complianceReport) { this.complianceReport = complianceReport; return this; }
         public Builder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
 
         public DocAnalysis build() {
-            return new DocAnalysis(id, document, summary, riskLevel, keyClauses, rawAiResponse, createdAt);
+            return new DocAnalysis(id, document, summary, riskLevel, keyClauses, rawAiResponse, complianceReport, createdAt);
         }
     }
 }
