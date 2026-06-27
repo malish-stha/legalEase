@@ -4,6 +4,7 @@ import StoreProvider from "../store/StoreProvider";
 import "./globals.css";
 import { Lora } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { Toaster } from "sonner";
 
 const lora = Lora({subsets:['latin'],variable:'--font-serif'});
 
@@ -23,6 +24,7 @@ export default function RootLayout({
         <ClerkProvider appearance={{ baseTheme: shadcn }}>
           <StoreProvider>
             {children}
+            <Toaster richColors closeButton position="top-right" />
           </StoreProvider>
         </ClerkProvider>
       </body>

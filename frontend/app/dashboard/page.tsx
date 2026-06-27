@@ -10,6 +10,7 @@ import {
   Clock, TrendingUp, Scale, Sparkles, ShieldCheck, Trash2
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/store";
 import { translations } from "@/lib/translations";
@@ -107,12 +108,13 @@ export default function Dashboard() {
         `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/documents/${docId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      toast.success("Document deleted successfully");
       // Refresh state
       fetchDocuments();
       fetchHealthScore();
     } catch (err) {
       console.error("Failed to delete document", err);
-      alert("Failed to delete document. Please try again.");
+      toast.error("Failed to delete document. Please try again.");
     }
   };
 
@@ -222,11 +224,13 @@ export default function Dashboard() {
         setDocuments((prev) => [response.data, ...prev]);
         setIsUploading(false);
         setUploadProgress("");
+        toast.success("Document uploaded successfully!");
       } catch (err: any) {
         console.error("Upload failed", err);
         setUploadError(t.uploadError);
         setIsUploading(false);
         setUploadProgress("");
+        toast.error("Upload failed. Please try again.");
       }
     },
     [getToken, user, t]

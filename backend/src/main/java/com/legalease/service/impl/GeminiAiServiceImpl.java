@@ -43,7 +43,7 @@ public class GeminiAiServiceImpl implements AiService {
         
         this.model = GoogleAiGeminiChatModel.builder()
                 .apiKey(apiKey)
-                .modelName("gemini-2.0-flash")
+                .modelName("gemini-2.5-flash")
                 .build();
 
         this.embeddingModel = GoogleAiEmbeddingModel.builder()
@@ -53,7 +53,7 @@ public class GeminiAiServiceImpl implements AiService {
 
         this.streamingModel = GoogleAiGeminiStreamingChatModel.builder()
                 .apiKey(apiKey)
-                .modelName("gemini-2.0-flash")
+                .modelName("gemini-2.5-flash")
                 .build();
     }
 
