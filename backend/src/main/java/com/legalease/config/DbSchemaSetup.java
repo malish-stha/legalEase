@@ -167,6 +167,71 @@ public class DbSchemaSetup implements CommandLineRunner {
             """);
             log.info("Default real legal templates pre-populated in database.");
 
+            // 8. Seed verified lawyers if none exist
+            try {
+                Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM lawyers", Integer.class);
+                if (count == null || count == 0) {
+                    log.info("Seeding default verified lawyers...");
+                    jdbcTemplate.execute("""
+                        INSERT INTO lawyers (id, name, email, phone, specialization, rating, hourly_rate, bio, location, experience_years, availability, is_verified, created_at)
+                        VALUES (
+                            gen_random_uuid(),
+                            'Aarav Sharma',
+                            'aarav@legalease.com',
+                            '+977-9851012345',
+                            'CIVIL',
+                            4.8,
+                            1500.00,
+                            'Senior Advocate specializing in Nepalese Civil law, property disputes, and land registrations. Over 12 years of courtroom experience.',
+                            'Kathmandu',
+                            12,
+                            '["2026-06-28 10:00", "2026-06-28 14:00", "2026-06-29 11:00", "2026-06-29 15:00"]',
+                            true,
+                            now()
+                        );
+                    """);
+                    jdbcTemplate.execute("""
+                        INSERT INTO lawyers (id, name, email, phone, specialization, rating, hourly_rate, bio, location, experience_years, availability, is_verified, created_at)
+                        VALUES (
+                            gen_random_uuid(),
+                            'Pooja Adhikari',
+                            'pooja@legalease.com',
+                            '+977-9841234567',
+                            'LABOUR',
+                            4.9,
+                            1200.00,
+                            'Advocate focused on employment contracts, Labour Act 2074 compliance audit, corporate disputes, and employee rights.',
+                            'Lalitpur',
+                            8,
+                            '["2026-06-28 09:00", "2026-06-28 13:00", "2026-06-30 10:00", "2026-06-30 16:00"]',
+                            true,
+                            now()
+                        );
+                    """);
+                    jdbcTemplate.execute("""
+                        INSERT INTO lawyers (id, name, email, phone, specialization, rating, hourly_rate, bio, location, experience_years, availability, is_verified, created_at)
+                        VALUES (
+                            gen_random_uuid(),
+                            'Rajesh Shrestha',
+                            'rajesh@legalease.com',
+                            '+977-9810987654',
+                            'CORPORATE',
+                            4.7,
+                            2000.00,
+                            'Expert corporate lawyer specialized in startup advisory, foreign direct investment (FDI), copyright registrations, and commercial NDAs.',
+                            'Kathmandu',
+                            15,
+                            '["2026-06-29 10:00", "2026-06-29 13:00", "2026-06-30 11:00", "2026-06-30 14:00"]',
+                            true,
+                            now()
+                        );
+                    """);
+                    log.info("Default verified lawyers seeded successfully.");
+                }
+            } catch (Exception lawyerEx) {
+                log.warn("Could not seed lawyers table: {}", lawyerEx.getMessage());
+            }
+
         } catch (Exception e) {
             log.error("Fatal error during database schema setup", e);
         }

@@ -68,4 +68,14 @@ public class DocumentController {
         DocumentResponse response = documentService.getDocumentDetails(id, clerkUserId);
         return ResponseEntity.ok(response);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteDocument(
+            @PathVariable("id") UUID id,
+            @AuthenticationPrincipal Jwt jwt) {
+        String clerkUserId = jwt.getSubject();
+        log.info("Request to delete document: {} for user: {}", id, clerkUserId);
+        documentService.deleteDocument(id, clerkUserId);
+        return ResponseEntity.noContent().build();
+    }
 }

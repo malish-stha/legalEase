@@ -251,4 +251,46 @@ public class GeminiAiServiceImpl implements AiService {
             throw new RuntimeException("Gemini document comparison failed", e);
         }
     }
+
+    @Override
+    public String preScreenCase(String issueDescription, String documentText) {
+        log.info("Running AI pre-screening assessment. Issue length: {}, Doc length: {}", 
+                issueDescription != null ? issueDescription.length() : 0, 
+                documentText != null ? documentText.length() : 0);
+
+        String systemPrompt = """
+                You are a senior legal pre-screening officer specializing in Nepal law.
+                Analyze the user's issue description and any provided legal document context.
+                Evaluate:
+                1. The complexity of the case (LOW, MEDIUM, HIGH).
+                2. Potential legal exposure, liabilities, or risks for the user under Nepal Law.
+                3. Actionable next steps or recommendations before consulting a lawyer.
+                
+                Return your analysis in JSON format matching this EXACT schema:
+                {
+                  "complexityRating": "LOW | MEDIUM | HIGH",
+                  "report": "A detailed, structured markdown text summarizing your exposure assessment, relevant Nepal laws (e.g. Civil Code, Labour Act), risks, and advice in both English and Nepali."
+                }
+                
+                Respond with ONLY the raw JSON output. Do not wrap it in markdown code blocks like ```json ... ```. Just return the JSON object directly.
+                """;
+
+        String userMessage = "User's Explanation of the Issue:\n" + (issueDescription != null ? issueDescription : "Not provided") + 
+                "\\n\\nAssociated Document Context:\\n" + (documentText != null ? documentText : "Not provided");
+
+        try {
+            String response = model.generate(userMessage + "\\n\\nInstructions:\\n" + systemPrompt);
+            String cleanedResponse = response.trim();
+            if (cleanedResponse.startsWith("```json")) {
+                cleanedResponse = cleanedResponse.substring(7);
+            }
+            if (cleanedResponse.endsWith("```")) {
+                cleanedResponse = cleanedResponse.substring(0, cleanedResponse.length() - 3);
+            }
+            return cleanedResponse.trim();
+        } catch (Exception e) {
+            log.error("Failed to pre-screen case via Gemini model", e);
+            throw new RuntimeException("Gemini case pre-screening failed", e);
+        }
+    }
 }

@@ -33,6 +33,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final DocumentRepository documentRepository;
     private final DocAnalysisRepository docAnalysisRepository;
     private final DocEmbeddingRepository docEmbeddingRepository;
+    private final com.legalease.repository.ConversationRepository conversationRepository;
     
     private final StorageService storageService;
     private final DocumentParserService documentParserService;
@@ -46,6 +47,7 @@ public class DocumentServiceImpl implements DocumentService {
             DocumentRepository documentRepository,
             DocAnalysisRepository docAnalysisRepository,
             DocEmbeddingRepository docEmbeddingRepository,
+            com.legalease.repository.ConversationRepository conversationRepository,
             StorageService storageService,
             DocumentParserService documentParserService,
             RedactionService redactionService,
@@ -54,6 +56,7 @@ public class DocumentServiceImpl implements DocumentService {
         this.documentRepository = documentRepository;
         this.docAnalysisRepository = docAnalysisRepository;
         this.docEmbeddingRepository = docEmbeddingRepository;
+        this.conversationRepository = conversationRepository;
         this.storageService = storageService;
         this.documentParserService = documentParserService;
         this.redactionService = redactionService;
@@ -162,8 +165,19 @@ public class DocumentServiceImpl implements DocumentService {
         } catch (Exception e) {
             log.error("AI Analysis/Embedding failed for document: {}", document.getId(), e);
             document.setStatus("FAILED");
-            documentRepository.save(document);
-            throw new IOException("Failed to analyze and embed document with AI", e);
+            document = documentRepository.save(document);
+
+            // Create fallback analysis details so the dashboard page does not crash
+            DocAnalysis docAnalysis = DocAnalysis.builder()
+                    .document(document)
+                    .summary("AI Analysis is temporarily unavailable due to API rate limits or quota constraints. Please try uploading again later.")
+                    .riskLevel("LOW")
+                    .keyClauses("[]")
+                    .rawAiResponse("{}")
+                    .build();
+            docAnalysisRepository.save(docAnalysis);
+
+            return mapToResponse(document, docAnalysis);
         }
     }
 
@@ -253,5 +267,42 @@ public class DocumentServiceImpl implements DocumentService {
                 .createdAt(doc.getCreatedAt())
                 .analysis(analysisResponse)
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public void deleteDocument(UUID documentId, String clerkUserId) {
+        log.info("Request to delete document ID: {} by user: {}", documentId, clerkUserId);
+        Document document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new IllegalArgumentException("Document not found with ID: " + documentId));
+
+        if (!document.getUser().getId().equals(clerkUserId)) {
+            throw new SecurityException("User is not authorized to delete this document");
+        }
+
+        // 1. Delete associated vector embeddings
+        log.info("Deleting vector embeddings for document ID: {}", documentId);
+        docEmbeddingRepository.deleteByDocumentId(documentId);
+
+        // 2. Delete associated analyses
+        log.info("Deleting analysis records for document ID: {}", documentId);
+        docAnalysisRepository.deleteByDocumentId(documentId);
+
+        // 3. Delete associated chat conversations
+        log.info("Deleting chat conversations for document ID: {}", documentId);
+        conversationRepository.deleteByDocumentId(documentId);
+
+        // 4. Delete document record itself from database
+        log.info("Deleting document record from DB for ID: {}", documentId);
+        documentRepository.delete(document);
+
+        // 5. Delete physical file from Supabase Storage bucket asynchronously/non-blockingly
+        if (document.getFileUrl() != null) {
+            try {
+                storageService.deleteFile(document.getFileUrl());
+            } catch (Exception e) {
+                log.warn("Failed to delete physical file from storage during document cleanup: {}", document.getFileUrl(), e);
+            }
+        }
     }
 }

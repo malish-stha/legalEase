@@ -50,4 +50,27 @@ public class SupabaseStorageServiceImpl implements StorageService {
             throw new IOException("Storage upload failed", e);
         }
     }
+
+    @Override
+    public void deleteFile(String fileUrl) {
+        if (fileUrl == null || fileUrl.isEmpty()) {
+            return;
+        }
+        log.info("Deleting file from storage: {}", fileUrl);
+        try {
+            String searchString = "/storage/v1/object/public/" + bucketName + "/";
+            int index = fileUrl.indexOf(searchString);
+            if (index != -1) {
+                String key = fileUrl.substring(index + searchString.length());
+                log.info("Extracted storage key for deletion: {}", key);
+                s3Client.deleteObject(software.amazon.awssdk.services.s3.model.DeleteObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(key)
+                        .build());
+                log.info("Successfully deleted file: {} from Supabase Storage", key);
+            }
+        } catch (Exception e) {
+            log.error("Failed to delete file from Supabase S3 compatibility storage: {}", fileUrl, e);
+        }
+    }
 }

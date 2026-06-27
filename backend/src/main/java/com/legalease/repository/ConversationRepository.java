@@ -10,4 +10,5 @@ import java.util.UUID;
 @Repository
 public interface ConversationRepository extends JpaRepository<Conversation, UUID> {
     Optional<Conversation> findByUserIdAndDocumentId(String userId, UUID documentId);
+    void deleteByDocumentId(UUID documentId);
 }

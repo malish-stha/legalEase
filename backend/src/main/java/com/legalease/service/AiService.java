@@ -42,4 +42,12 @@ public interface AiService {
      * @return JSON analysis of the changes and comparison details.
      */
     String compareDocuments(String baseText, String compareText);
+
+    /**
+     * Analyzes case details or document text and evaluates complexity & exposure.
+     * @param issueDescription Text explanation of the user's issue.
+     * @param documentText Text content of any linked document.
+     * @return JSON string containing "complexityRating" (LOW, MEDIUM, HIGH) and "report" (detailed exposure assessment).
+     */
+    String preScreenCase(String issueDescription, String documentText);
 }

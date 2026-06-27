@@ -10,4 +10,5 @@ import java.util.UUID;
 @Repository
 public interface DocAnalysisRepository extends JpaRepository<DocAnalysis, UUID> {
     Optional<DocAnalysis> findByDocumentId(UUID documentId);
+    void deleteByDocumentId(UUID documentId);
 }

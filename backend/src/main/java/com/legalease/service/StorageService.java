@@ -11,4 +11,10 @@ public interface StorageService {
      * @return Public URL of the uploaded file.
      */
     String uploadFile(MultipartFile file, String fileName) throws IOException;
+
+    /**
+     * Deletes file from Supabase storage bucket.
+     * @param fileUrl The public URL of the file to delete.
+     */
+    void deleteFile(String fileUrl);
 }

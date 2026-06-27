@@ -32,4 +32,11 @@ public interface DocumentService {
      * @return DocumentResponse details.
      */
     DocumentResponse getDocumentDetails(UUID documentId, String clerkUserId);
+
+    /**
+     * Deletes a document and all related DB details (embeddings, analyses, conversations).
+     * @param documentId Document ID to delete.
+     * @param clerkUserId Clerk user ID checking ownership.
+     */
+    void deleteDocument(UUID documentId, String clerkUserId);
 }
