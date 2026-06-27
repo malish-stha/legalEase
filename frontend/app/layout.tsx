@@ -20,6 +20,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ne" dir="ltr" className={cn("dark", "font-serif", lora.variable)}>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#18181b" />
+        <script dangerouslySetInnerHTML={{ __html: `
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+              navigator.serviceWorker.register('/sw.js');
+            });
+          }
+        `}} />
+      </head>
       <body className="antialiased min-h-screen bg-background text-foreground">
         <ClerkProvider appearance={{ baseTheme: shadcn }}>
           <StoreProvider>

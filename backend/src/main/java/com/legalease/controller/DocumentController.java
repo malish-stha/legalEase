@@ -31,6 +31,7 @@ public class DocumentController {
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "email", required = false) String paramEmail,
             @RequestParam(value = "name", required = false) String paramName,
+            @RequestParam(value = "organizationId", required = false) UUID organizationId,
             @AuthenticationPrincipal Jwt jwt) throws IOException {
 
         String clerkUserId = jwt.getSubject();
@@ -46,8 +47,8 @@ public class DocumentController {
             name = paramName;
         }
 
-        log.info("Received upload request from Clerk User: {}, Email: {}", clerkUserId, email);
-        DocumentResponse response = documentService.uploadAndAnalyze(file, clerkUserId, email, name);
+        log.info("Received upload request from Clerk User: {}, Email: {}, OrgId: {}", clerkUserId, email, organizationId);
+        DocumentResponse response = documentService.uploadAndAnalyze(file, clerkUserId, email, name, organizationId);
         return ResponseEntity.ok(response);
     }
 

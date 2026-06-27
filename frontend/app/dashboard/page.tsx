@@ -56,6 +56,10 @@ export default function Dashboard() {
   const [uploadProgress, setUploadProgress] = useState("");
   const [uploadError, setUploadError] = useState<string | null>(null);
 
+  // Phase 5 states (Workspaces)
+  const [organizations, setOrganizations] = useState<any[]>([]);
+  const [selectedOrgId, setSelectedOrgId] = useState<string>("personal");
+
   // Phase 4 states
   const [healthScore, setHealthScore] = useState<{
     score: number;
@@ -163,28 +167,46 @@ export default function Dashboard() {
     });
   };
 
-  const fetchDocuments = useCallback(async () => {
+  const fetchOrganizations = useCallback(async () => {
     try {
       const token = await getToken();
       if (!token) return;
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/documents`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/organizations`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      setOrganizations(response.data);
+    } catch (err) {
+      console.error("Failed to fetch organizations", err);
+    }
+  }, [getToken]);
+
+  const fetchDocuments = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+      
+      let url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/documents`;
+      if (selectedOrgId !== "personal") {
+        url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/organizations/${selectedOrgId}/documents`;
+      }
+
+      const response = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
       setDocuments(response.data);
     } catch (err) {
       console.error("Failed to fetch documents", err);
     } finally {
       setLoadingDocs(false);
     }
-  }, [getToken]);
+  }, [getToken, selectedOrgId]);
 
   useEffect(() => {
     fetchDocuments();
     fetchHealthScore();
     fetchLawyers();
     fetchBookings();
-  }, [fetchDocuments, fetchHealthScore, fetchLawyers, fetchBookings]);
+    fetchOrganizations();
+  }, [fetchDocuments, fetchHealthScore, fetchLawyers, fetchBookings, fetchOrganizations]);
 
   useEffect(() => {
     const hasProcessingDocs = documents.some(
@@ -213,12 +235,17 @@ export default function Dashboard() {
         const formData = new FormData();
         formData.append("file", file);
         setUploadProgress(t.analyzing);
+        const params: any = { email: user?.primaryEmailAddress?.emailAddress, name: user?.fullName };
+        if (selectedOrgId !== "personal") {
+          params.organizationId = selectedOrgId;
+        }
+
         const response = await axios.post(
           `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/documents/upload`,
           formData,
           {
             headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
-            params: { email: user?.primaryEmailAddress?.emailAddress, name: user?.fullName },
+            params,
           }
         );
         setDocuments((prev) => [response.data, ...prev]);
@@ -233,7 +260,7 @@ export default function Dashboard() {
         toast.error("Upload failed. Please try again.");
       }
     },
-    [getToken, user, t]
+    [getToken, user, t, selectedOrgId]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -290,6 +317,84 @@ export default function Dashboard() {
               );
             })}
           </nav>
+
+          {/* Workspace Switcher */}
+          <div className="space-y-2 border-t border-border pt-4">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block mb-2">Workspaces</span>
+            <div className="relative">
+              <select
+                value={selectedOrgId}
+                onChange={(e) => setSelectedOrgId(e.target.value)}
+                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary appearance-none cursor-pointer"
+              >
+                <option value="personal">Personal Space</option>
+                {organizations.map((org) => (
+                  <option key={org.id} value={org.id}>{org.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            {selectedOrgId !== "personal" && organizations.find(o => o.id === selectedOrgId) && (
+              <div className="bg-muted/40 p-2 rounded-lg text-[9px] text-muted-foreground font-mono truncate select-all" title="Click to select invite code">
+                Code: {organizations.find(o => o.id === selectedOrgId)?.inviteCode}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-1.5 pt-1">
+              <button
+                onClick={async () => {
+                  const name = prompt("Enter new workspace name:");
+                  if (!name || !name.trim()) return;
+                  try {
+                    const token = await getToken();
+                    if (!token) return;
+                    const response = await axios.post(
+                      `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/organizations`,
+                      null,
+                      {
+                        headers: { Authorization: `Bearer ${token}` },
+                        params: { name }
+                      }
+                    );
+                    toast.success(`Workspace "${response.data.name}" created!`);
+                    fetchOrganizations();
+                    setSelectedOrgId(response.data.id);
+                  } catch (err) {
+                    toast.error("Failed to create workspace.");
+                  }
+                }}
+                className="text-[10px] font-semibold text-primary hover:underline text-left"
+              >
+                + Create
+              </button>
+              <button
+                onClick={async () => {
+                  const code = prompt("Enter invite code:");
+                  if (!code || !code.trim()) return;
+                  try {
+                    const token = await getToken();
+                    if (!token) return;
+                    const response = await axios.post(
+                      `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"}/api/organizations/join`,
+                      null,
+                      {
+                        headers: { Authorization: `Bearer ${token}` },
+                        params: { inviteCode: code }
+                      }
+                    );
+                    toast.success(`Successfully joined "${response.data.name}"!`);
+                    fetchOrganizations();
+                    setSelectedOrgId(response.data.id);
+                  } catch (err: any) {
+                    toast.error(err.response?.data?.message || "Failed to join workspace. Check code.");
+                  }
+                }}
+                className="text-[10px] font-semibold text-primary hover:underline text-right"
+              >
+                → Join
+              </button>
+            </div>
+          </div>
 
           {/* Quick stats in sidebar */}
           <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">

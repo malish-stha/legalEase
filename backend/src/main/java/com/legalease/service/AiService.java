@@ -42,7 +42,6 @@ public interface AiService {
      * @return JSON analysis of the changes and comparison details.
      */
     String compareDocuments(String baseText, String compareText);
-
     /**
      * Analyzes case details or document text and evaluates complexity & exposure.
      * @param issueDescription Text explanation of the user's issue.
@@ -50,4 +49,11 @@ public interface AiService {
      * @return JSON string containing "complexityRating" (LOW, MEDIUM, HIGH) and "report" (detailed exposure assessment).
      */
     String preScreenCase(String issueDescription, String documentText);
+
+    /**
+     * Generates a simple, non-streaming text response from Gemini.
+     * @param prompt User/system prompt.
+     * @return AI reply.
+     */
+    String generateChatResponse(String prompt);
 }

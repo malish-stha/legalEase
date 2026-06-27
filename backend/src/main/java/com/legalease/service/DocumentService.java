@@ -16,7 +16,7 @@ public interface DocumentService {
      * @param userName Clerk user full name.
      * @return DocumentResponse mapped details.
      */
-    DocumentResponse uploadAndAnalyze(MultipartFile file, String clerkUserId, String userEmail, String userName) throws IOException;
+    DocumentResponse uploadAndAnalyze(MultipartFile file, String clerkUserId, String userEmail, String userName, UUID organizationId) throws IOException;
 
     /**
      * Lists all documents belonging to a user.

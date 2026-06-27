@@ -293,4 +293,15 @@ public class GeminiAiServiceImpl implements AiService {
             throw new RuntimeException("Gemini case pre-screening failed", e);
         }
     }
+
+    @Override
+    public String generateChatResponse(String prompt) {
+        log.info("Generating simple text response from Gemini...");
+        try {
+            return model.generate(prompt);
+        } catch (Exception e) {
+            log.error("Failed to generate text response", e);
+            throw new RuntimeException("Gemini generation failed", e);
+        }
+    }
 }

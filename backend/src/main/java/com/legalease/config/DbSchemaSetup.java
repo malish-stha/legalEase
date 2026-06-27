@@ -74,6 +74,38 @@ public class DbSchemaSetup implements CommandLineRunner {
             jdbcTemplate.execute("ALTER TABLE doc_analyses ADD COLUMN IF NOT EXISTS compliance_report TEXT;");
             log.info("doc_analyses compliance_report column verified/created.");
 
+            // 5b. Create organizations table
+            jdbcTemplate.execute("""
+                CREATE TABLE IF NOT EXISTS organizations (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    name VARCHAR(255) NOT NULL,
+                    invite_code VARCHAR(255) UNIQUE NOT NULL,
+                    created_at TIMESTAMPTZ DEFAULT now()
+                );
+            """);
+            log.info("organizations table verified/created successfully.");
+
+            // 5c. Create org_members table
+            jdbcTemplate.execute("""
+                CREATE TABLE IF NOT EXISTS org_members (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
+                    organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+                    role VARCHAR(50) NOT NULL DEFAULT 'MEMBER',
+                    joined_at TIMESTAMPTZ DEFAULT now(),
+                    CONSTRAINT unique_user_org UNIQUE (user_id, organization_id)
+                );
+            """);
+            log.info("org_members table verified/created successfully.");
+
+            // 5d. Add organization_id column to documents table
+            try {
+                jdbcTemplate.execute("ALTER TABLE documents ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL;");
+                log.info("documents organization_id column verified/created.");
+            } catch (Exception alterDocEx) {
+                log.warn("Could not alter documents table to add organization_id: {}", alterDocEx.getMessage());
+            }
+
             // 6. Create templates table
             jdbcTemplate.execute("""
                 CREATE TABLE IF NOT EXISTS templates (

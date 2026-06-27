@@ -10,4 +10,5 @@ import java.util.UUID;
 @Repository
 public interface DocumentRepository extends JpaRepository<Document, UUID> {
     List<Document> findByUserIdOrderByCreatedAtDesc(String userId);
+    List<Document> findByOrganizationIdOrderByCreatedAtDesc(UUID organizationId);
 }

@@ -34,6 +34,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final DocAnalysisRepository docAnalysisRepository;
     private final DocEmbeddingRepository docEmbeddingRepository;
     private final com.legalease.repository.ConversationRepository conversationRepository;
+    private final com.legalease.repository.OrganizationRepository organizationRepository;
     
     private final StorageService storageService;
     private final DocumentParserService documentParserService;
@@ -48,6 +49,7 @@ public class DocumentServiceImpl implements DocumentService {
             DocAnalysisRepository docAnalysisRepository,
             DocEmbeddingRepository docEmbeddingRepository,
             com.legalease.repository.ConversationRepository conversationRepository,
+            com.legalease.repository.OrganizationRepository organizationRepository,
             StorageService storageService,
             DocumentParserService documentParserService,
             RedactionService redactionService,
@@ -57,6 +59,7 @@ public class DocumentServiceImpl implements DocumentService {
         this.docAnalysisRepository = docAnalysisRepository;
         this.docEmbeddingRepository = docEmbeddingRepository;
         this.conversationRepository = conversationRepository;
+        this.organizationRepository = organizationRepository;
         this.storageService = storageService;
         this.documentParserService = documentParserService;
         this.redactionService = redactionService;
@@ -65,7 +68,7 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional
-    public DocumentResponse uploadAndAnalyze(MultipartFile file, String clerkUserId, String userEmail, String userName) throws IOException {
+    public DocumentResponse uploadAndAnalyze(MultipartFile file, String clerkUserId, String userEmail, String userName, UUID organizationId) throws IOException {
         log.info("Processing document upload request. User: {}, File: {}, Content-Type: {}", 
                 clerkUserId, file.getOriginalFilename(), file.getContentType());
 
@@ -101,13 +104,16 @@ public class DocumentServiceImpl implements DocumentService {
         String publicFileUrl = storageService.uploadFile(file, uniqueFileName);
 
         // 5. Create initial document record with status PROCESSING
-        Document document = Document.builder()
+        Document.Builder docBuilder = Document.builder()
                 .user(user)
                 .fileName(file.getOriginalFilename())
                 .fileUrl(publicFileUrl)
                 .status("PROCESSING")
-                .language("en")
-                .build();
+                .language("en");
+        if (organizationId != null) {
+            docBuilder.organization(organizationRepository.getReferenceById(organizationId));
+        }
+        Document document = docBuilder.build();
         document = documentRepository.save(document);
 
         // 6. Generate legal summary and chunk/embed document text

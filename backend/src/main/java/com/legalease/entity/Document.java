@@ -31,9 +31,13 @@ public class Document {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organization_id")
+    private Organization organization;
+
     public Document() {}
 
-    public Document(UUID id, User user, String fileUrl, String fileName, String status, String language, LocalDateTime createdAt) {
+    public Document(UUID id, User user, String fileUrl, String fileName, String status, String language, LocalDateTime createdAt, Organization organization) {
         this.id = id;
         this.user = user;
         this.fileUrl = fileUrl;
@@ -41,6 +45,7 @@ public class Document {
         this.status = status;
         this.language = language;
         this.createdAt = createdAt;
+        this.organization = organization;
     }
 
     @PrePersist
@@ -75,6 +80,9 @@ public class Document {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
+    public Organization getOrganization() { return organization; }
+    public void setOrganization(Organization organization) { this.organization = organization; }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -87,6 +95,7 @@ public class Document {
         private String status;
         private String language;
         private LocalDateTime createdAt;
+        private Organization organization;
 
         public Builder id(UUID id) { this.id = id; return this; }
         public Builder user(User user) { this.user = user; return this; }
@@ -95,9 +104,10 @@ public class Document {
         public Builder status(String status) { this.status = status; return this; }
         public Builder language(String language) { this.language = language; return this; }
         public Builder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
+        public Builder organization(Organization organization) { this.organization = organization; return this; }
 
         public Document build() {
-            return new Document(id, user, fileUrl, fileName, status, language, createdAt);
+            return new Document(id, user, fileUrl, fileName, status, language, createdAt, organization);
         }
     }
 }
